@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Contract Interaction</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.3.umd.min.js" type="application/javascript"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        button, input {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Interact with Smart Contract</h1>
+
+    <!-- Button to connect MetaMask -->
+    <button id="connectButton">Connect MetaMask</button>
+
+    <p id="walletAddress"></p>
+
+    <!-- Display current num value -->
+    <div>
+        <h2>Current Number</h2>
+        <button id="getNumButton">Get Number</button>
+        <p id="currentNum">Number: Not Loaded</p>
+    </div>
+
+    <!-- Set new num value -->
+    <div>
+        <h2>Set New Number</h2>
+        <input type="number" id="numInput" placeholder="Enter new number">
+        <button id="setNumButton">Set Number</button>
+    </div>
+
+    <script>
+        // Your contract details
+        const contractAddress = "0x159B0BAE223E47582Bb4bBc53DCFC0aeCFaC21fe";
+        const contractABI = [
+            {
+                "inputs": [],
+                "name": "num",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "input",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "setNum",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        let provider;
+        let signer;
+        let contract;
+
+        // Connect to MetaMask wallet
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    document.getElementById("walletAddress").innerText = "Connected: " + (await signer.getAddress());
+
+                    // Initialize the contract
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+                } catch (error) {
+                    console.error("Error connecting to MetaMask", error);
+                }
+            } else {
+                alert("MetaMask is not installed. Please install MetaMask and try again.");
+            }
+        }
+
+        // Get the current num value from the contract
+        async function getNum() {
+            if (contract) {
+                try {
+                    const num = await contract.num();
+                    document.getElementById("currentNum").innerText = "Number: " + num;
+                } catch (error) {
+                    console.error("Error fetching num", error);
+                }
+            } else {
+                alert("Please connect to MetaMask first.");
+            }
+        }
+
+        // Set a new num value in the contract
+        async function setNum() {
+            const numInput = document.getElementById("numInput").value;
+            if (contract && numInput) {
+                try {
+                    const tx = await contract.setNum(numInput);
+                    await tx.wait(); // Wait for transaction to be mined
+                    alert("Number set successfully!");
+                    getNum(); // Refresh the displayed number
+                } catch (error) {
+                    console.error("Error setting num", error);
+                }
+            } else {
+                alert("Please connect to MetaMask and enter a valid number.");
+            }
+        }
+
+        // Event listeners for buttons
+        document.getElementById("connectButton").addEventListener("click", connectWallet);
+        document.getElementById("getNumButton").addEventListener("click", getNum);
+        document.getElementById("setNumButton").addEventListener("click", setNum);
+
+    </script>
+
+</body>
+</html>
